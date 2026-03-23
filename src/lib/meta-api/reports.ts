@@ -1,4 +1,4 @@
-import { META_API_VERSION } from "./oauth";
+import { META_API_VERSION, metaAuthHeaders } from "./oauth";
 
 export interface AdInsight {
   campaign_id: string;
@@ -12,10 +12,9 @@ export interface AdInsight {
 }
 
 export async function getCampaignInsights(adAccountId: string, accessToken: string, datePreset: string = 'last_30d') {
-  // Fetch campaigns with their insights
-  const url = `https://graph.facebook.com/${META_API_VERSION}/act_${adAccountId}/insights?level=campaign&fields=campaign_id,campaign_name,spend,reach,clicks,cpc,ctr,actions,conversions&date_preset=${datePreset}&access_token=${accessToken}`;
+  const url = `https://graph.facebook.com/${META_API_VERSION}/act_${adAccountId}/insights?level=campaign&fields=campaign_id,campaign_name,spend,reach,clicks,cpc,ctr,actions,conversions&date_preset=${datePreset}`;
   
-  const response = await fetch(url);
+  const response = await fetch(url, { headers: metaAuthHeaders(accessToken) });
   
   if (!response.ok) {
     const error = await response.json();
@@ -28,10 +27,9 @@ export async function getCampaignInsights(adAccountId: string, accessToken: stri
 }
 
 export async function getDashboardSummary(adAccountId: string, accessToken: string, datePreset: string = 'last_30d') {
-  // Fetch overall account insights
-  const url = `https://graph.facebook.com/${META_API_VERSION}/act_${adAccountId}/insights?level=account&fields=spend,reach,clicks,cpc,ctr,actions&date_preset=${datePreset}&access_token=${accessToken}`;
+  const url = `https://graph.facebook.com/${META_API_VERSION}/act_${adAccountId}/insights?level=account&fields=spend,reach,clicks,cpc,ctr,actions&date_preset=${datePreset}`;
   
-  const response = await fetch(url);
+  const response = await fetch(url, { headers: metaAuthHeaders(accessToken) });
   
   if (!response.ok) {
      return null;

@@ -6,10 +6,14 @@ export default async function SuperadminDashboard() {
   const supabase = await createClient();
 
   // We could create custom RPC functions for accurate counts, but for setup we'll use head counts
-  const [{ count: tenantsCount }, { count: usersCount }, { count: connectionsCount }] = await Promise.all([
+  const [{ count: tenantsCount }, { count: usersCount }, { count: connectionsCount }, { count: syncErrorsCount }] = await Promise.all([
     supabase.from("tenants").select("*", { count: "exact", head: true }),
     supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "user"),
     supabase.from("meta_connections").select("*", { count: "exact", head: true }).eq("status", "connected"),
+    supabase.from("sync_logs")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "error")
+      .gte("started_at", new Date(Date.now() - 86400000).toISOString())
   ]);
 
   const stats = [
@@ -29,8 +33,8 @@ export default async function SuperadminDashboard() {
       icon: <ToggleRight className="text-primary" size={24} />,
     },
     {
-      title: "Problemas de Sync",
-      value: 0,
+      title: "Problemas de Sync (24h)",
+      value: syncErrorsCount || 0,
       icon: <AlertCircle className="text-destructive" size={24} />,
     },
   ];

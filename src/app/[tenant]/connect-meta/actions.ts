@@ -14,7 +14,7 @@ export async function revokeMetaConnection(connectionId: string) {
     .eq("id", connectionId);
 
   if (error) {
-    throw new Error(error.message);
+    return { error: error.message };
   }
 
   // We should also delete derived data potentially: campaigns, ad_insights.
@@ -22,4 +22,5 @@ export async function revokeMetaConnection(connectionId: string) {
   // so this handles cleanup automatically!
   
   revalidatePath("/[tenant]/connect-meta", "page");
+  return { success: true };
 }

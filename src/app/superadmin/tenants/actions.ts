@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireSuperadmin } from "@/lib/auth-guard";
 import { TenantSchema, type TenantActionState } from "@/lib/validations/tenant";
 import { revalidatePath } from "next/cache";
 
@@ -8,6 +9,8 @@ export async function createTenantAction(
   prevState: TenantActionState | undefined,
   formData: FormData
 ): Promise<TenantActionState> {
+  await requireSuperadmin();
+
   const validatedFields = TenantSchema.safeParse(
     Object.fromEntries(formData.entries())
   );
@@ -50,6 +53,8 @@ export async function updateTenantAction(
   prevState: TenantActionState | undefined,
   formData: FormData
 ): Promise<TenantActionState> {
+  await requireSuperadmin();
+
   const validatedFields = TenantSchema.safeParse(
     Object.fromEntries(formData.entries())
   );
@@ -87,6 +92,8 @@ export async function updateTenantAction(
 }
 
 export async function deleteTenantAction(id: string) {
+  await requireSuperadmin();
+
   const adminAuthClient = createAdminClient();
   const { error } = await adminAuthClient.from("tenants").delete().eq("id", id);
   if (error) throw new Error(error.message);

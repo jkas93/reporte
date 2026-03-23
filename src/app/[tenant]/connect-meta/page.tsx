@@ -27,7 +27,7 @@ export default async function ConnectMetaPage(props: {
   // Get current connection
   const { data: connection } = await supabase
     .from("meta_connections")
-    .select("*")
+    .select("id, ad_account_id, ad_account_name, status, last_synced_at, token_expires_at")
     .eq("tenant_id", tenant.id)
     .single();
 
@@ -125,7 +125,10 @@ export default async function ConnectMetaPage(props: {
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               {isConnected ? (
                 <>
-                  <form action={revokeMetaConnection.bind(null, connection.id)} className="w-full sm:w-auto">
+                  <form action={async (formData: FormData) => {
+                    "use server";
+                    await revokeMetaConnection(connection.id);
+                  }} className="w-full sm:w-auto">
                     <Button variant="destructive" type="submit" className="w-full sm:px-6">
                       <XCircle size={18} className="mr-2" /> Desconectar
                     </Button>

@@ -92,20 +92,26 @@ export async function getAdAccounts(accessToken: string, businessId?: string) {
   try {
     if (businessId && businessId !== "personal") {
       // Intentamos obtener cuentas de propiedad y de clientes (socios) del negocio específico
-      // Esto resuelve el caso de cuentas compartidas via Partner
-      const [ownedRes, clientRes] = await Promise.all([
-        fetch(`https://graph.facebook.com/${META_API_VERSION}/${businessId}/owned_ad_accounts?fields=name,account_id,account_status,business&limit=50`, { headers: metaAuthHeaders(accessToken) }),
-        fetch(`https://graph.facebook.com/${META_API_VERSION}/${businessId}/client_ad_accounts?fields=name,account_id,account_status,business&limit=50`, { headers: metaAuthHeaders(accessToken) })
+      // Helper for pagination
+      async function fetchAll(url: string) {
+        let items: any[] = [];
+        let nextUrl: string | null = url;
+        while (nextUrl) {
+          const response: Response = await fetch(nextUrl, { headers: metaAuthHeaders(accessToken) });
+          if (!response.ok) break;
+          const jsonData: any = await response.json();
+          items = [...items, ...(jsonData.data || [])];
+          nextUrl = jsonData.paging?.next || null;
+        }
+        return items;
+      };
+
+      const [ownedResults, clientResults] = await Promise.all([
+        fetchAll(`https://graph.facebook.com/${META_API_VERSION}/${businessId}/owned_ad_accounts?fields=name,account_id,account_status,business&limit=50`),
+        fetchAll(`https://graph.facebook.com/${META_API_VERSION}/${businessId}/client_ad_accounts?fields=name,account_id,account_status,business&limit=50`)
       ]);
 
-      if (ownedRes.ok) {
-        const data = await ownedRes.json();
-        results = [...results, ...(data.data || [])];
-      }
-      if (clientRes.ok) {
-        const data = await clientRes.json();
-        results = [...results, ...(data.data || [])];
-      }
+      results = [...ownedResults, ...clientResults];
 
       // Si obtuvimos algo, lo devolvemos
       if (results.length > 0) return { data: results };

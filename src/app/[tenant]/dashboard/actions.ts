@@ -1,22 +1,20 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requireTenantAccess } from "@/lib/auth-guard";
 import { syncTenantData } from "@/lib/meta-api/sync";
 import { decrypt } from "@/lib/meta-api/encryption";
 import { revalidatePath } from "next/cache";
 
 export async function forceSyncTenant(tenantId: string, slug: string) {
   try {
+    await requireTenantAccess(tenantId);
     const supabase = await createClient();
-    
-    // Auth Check
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Acceso denegado");
 
-    // Get Connection
+    // Get Connection (only needed fields)
     const { data: connection } = await supabase
       .from("meta_connections")
-      .select("*")
+      .select("id, ad_account_id, access_token_encrypted, status, last_synced_at, token_expires_at")
       .eq("tenant_id", tenantId)
       .eq("status", "connected")
       .single();

@@ -11,7 +11,7 @@ export async function selectMetaAccount(formData: FormData) {
   const adAccountName = formData.get("account_name") as string;
 
   if (!tenantId || !adAccountId) {
-    throw new Error("Missing parameters");
+    return { error: "Faltan parámetros de selección" };
   }
 
   const supabase = await createClient();
@@ -28,7 +28,7 @@ export async function selectMetaAccount(formData: FormData) {
 
   if (error) {
     console.error("Error updating ad account:", error);
-    throw new Error(`Error al actualizar la cuenta: ${error.message}`);
+    return { error: `Error al actualizar la cuenta: ${error.message}` };
   }
 
   revalidatePath(`/${slug}/connect-meta`);

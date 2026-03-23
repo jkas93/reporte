@@ -15,6 +15,7 @@ import Link from "next/link";
 import { CampaignsEvolutionChart } from "@/components/ui/charts";
 import { DateRangeSelector } from "@/components/ui/date-range-selector";
 import { SyncButton } from "@/components/ui/sync-button";
+import { getCache, setCache } from "@/lib/utils/cache";
 
 const VALID_PRESETS = ["today","yesterday","last_7d","last_30d","this_month","last_month","last_90d"];
 
@@ -46,12 +47,28 @@ export default async function TenantDashboard(props: {
 
   const isConnected = connection?.status === "connected";
 
-  // ── Datos desde la BD (NO desde Meta API) ──
-  const [metrics, topCampaigns, timeline] = await Promise.all([
-    getMetricsSummaryFromDB(supabase, tenant.id, preset),
-    getTopCampaignsFromDB(supabase, tenant.id, preset),
-    getSpendTimelineFromDB(supabase, tenant.id, preset),
-  ]);
+  // ── Datos desde la BD (NO desde Meta API) con Caché ──
+  const cacheKey = `dashboard:${tenant.id}:${preset}`;
+  let cachedData = await getCache<{metrics: any, topCampaigns: any, timeline: any}>(cacheKey);
+
+  if (!cachedData) {
+    const [fetchedMetrics, fetchedTopCampaigns, fetchedTimeline] = await Promise.all([
+      getMetricsSummaryFromDB(supabase, tenant.id, preset),
+      getTopCampaignsFromDB(supabase, tenant.id, preset),
+      getSpendTimelineFromDB(supabase, tenant.id, preset),
+    ]);
+    
+    cachedData = {
+      metrics: fetchedMetrics,
+      topCampaigns: fetchedTopCampaigns,
+      timeline: fetchedTimeline
+    };
+
+    // TTL de 5 minutos (300 segundos) para evitar peticiones masivas
+    await setCache(cacheKey, cachedData, 300);
+  }
+
+  const { metrics, topCampaigns, timeline } = cachedData;
 
   const hasSyncedData = metrics.hasSyncedData;
 
@@ -165,7 +182,7 @@ export default async function TenantDashboard(props: {
           </CardHeader>
           <CardContent className="space-y-3">
             {topCampaigns.length > 0 ? (
-              topCampaigns.map((c, i) => (
+              topCampaigns.map((c: any, i: number) => (
                 <div
                   key={i}
                   className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border transition-colors"

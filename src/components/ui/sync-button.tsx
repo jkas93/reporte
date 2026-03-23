@@ -24,8 +24,10 @@ export function SyncButton({
     try {
       const result = await syncCampaignsAction(tenantId, slug)
       
-      if (result.success) {
-        toast.success(`Sincronización exitosa. Se procesaron ${result.processed} campañas.`, { id: toastId })
+      if (result && 'success' in result && result.success) {
+        toast.success(`Sincronización manual exitosa.`, { id: toastId })
+      } else if (result && 'error' in result) {
+        toast.error(result.error || "Fallo inesperado al sincronizar.", { id: toastId })
       } else {
         toast.error("Fallo inesperado al sincronizar.", { id: toastId })
       }

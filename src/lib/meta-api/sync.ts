@@ -11,8 +11,13 @@ export async function syncTenantData(
   connectionId: string,
   adAccountId: string,
   token: string,
-  datePreset: string = "last_30d"
+  datePreset: string = "last_30d",
+  tokenExpiresAt?: string | null
 ): Promise<SyncResult> {
+  if (tokenExpiresAt && new Date(tokenExpiresAt) < new Date()) {
+    throw new Error("TOKEN_EXPIRED: El token de Meta ha expirado. Reconecta tu cuenta.");
+  }
+
   const supabase = createAdminClient();
 
   // Fix P-3: Paginación completa — recorre todos los cursores de Meta API
@@ -29,6 +34,11 @@ export async function syncTenantData(
 
     if (!response.ok) {
       const error = await response.json();
+      
+      if (response.status === 429 || error.error?.code === 17 || error.error?.code === 80004) {
+        throw new Error("RATE_LIMIT: Límite de peticiones de Meta API alcanzado. Intenta de nuevo más tarde.");
+      }
+
       throw new Error(error.error?.message || "Error al sincronizar campañas desde Meta API");
     }
 

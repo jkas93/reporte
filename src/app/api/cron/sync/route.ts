@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     // 2. Traer todas las conexiones activas
     const { data: connections, error: connError } = await supabase
       .from("meta_connections")
-      .select("id, tenant_id, ad_account_id, access_token_encrypted, status") // Fix P-4: Selección mínima
+      .select("id, tenant_id, ad_account_id, access_token_encrypted, status, token_expires_at") // Fix P-4: Selección mínima
       .eq("status", "connected");
 
     if (connError) throw connError;
@@ -40,8 +40,15 @@ export async function GET(request: Request) {
     const syncResults = await Promise.allSettled(
       connections.map(async (conn) => {
         try {
+          if (conn.token_expires_at && new Date(conn.token_expires_at) < new Date()) {
+            await supabase.from("meta_connections")
+              .update({ status: "expired" })
+              .eq("id", conn.id);
+            throw new Error("Token expirado");
+          }
+
           const token = decrypt(conn.access_token_encrypted);
-          const result = await syncTenantData(conn.tenant_id, conn.id, conn.ad_account_id, token, 'yesterday');
+          const result = await syncTenantData(conn.tenant_id, conn.id, conn.ad_account_id, token, 'yesterday', conn.token_expires_at);
           
           return {
             tenant_id: conn.tenant_id,

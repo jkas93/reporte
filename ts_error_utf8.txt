@@ -1,5 +1,0 @@
-﻿src/app/dashboard/page.tsx(20,8): error TS2741: Property 'user' is missing in type '{ variant: "inset"; }' but required in type '{ user: any; tenantName?: string | undefined; }'.
-src/components/data-table.tsx(684,22): error TS2322: Type '{ children: string; render: Element; }' is not assignable to type 'IntrinsicAttributes & DialogTriggerProps & RefAttributes<HTMLButtonElement>'.
-  Property 'render' does not exist on type 'IntrinsicAttributes & DialogTriggerProps & RefAttributes<HTMLButtonElement>'.
-src/components/data-table.tsx(860,24): error TS2322: Type '{ render: Element; }' is not assignable to type 'IntrinsicAttributes & DialogCloseProps & RefAttributes<HTMLButtonElement>'.
-  Property 'render' does not exist on type 'IntrinsicAttributes & DialogCloseProps & RefAttributes<HTMLButtonElement>'.

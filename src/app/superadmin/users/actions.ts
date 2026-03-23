@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireSuperadmin } from "@/lib/auth-guard";
 import { UserSchema, type UserActionState } from "@/lib/validations/user";
 import { revalidatePath } from "next/cache";
 
@@ -8,6 +9,8 @@ export async function createUserAction(
   prevState: UserActionState | undefined,
   formData: FormData
 ): Promise<UserActionState> {
+  await requireSuperadmin();
+
   const validatedFields = UserSchema.safeParse({
     ...Object.fromEntries(formData.entries()),
     tenantIds: formData.getAll("tenantIds"),
@@ -66,6 +69,8 @@ export async function updateUserAction(
   prevState: UserActionState | undefined,
   formData: FormData
 ): Promise<UserActionState> {
+  await requireSuperadmin();
+
   const validatedFields = UserSchema.safeParse({
     ...Object.fromEntries(formData.entries()),
     tenantIds: formData.getAll("tenantIds"),
@@ -112,8 +117,11 @@ export async function updateUserAction(
 }
 
 export async function deleteUserAction(id: string) {
+  await requireSuperadmin();
+
   const adminAuthClient = createAdminClient();
   const { error } = await adminAuthClient.auth.admin.deleteUser(id);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
   revalidatePath("/superadmin/users");
+  return { success: true };
 }

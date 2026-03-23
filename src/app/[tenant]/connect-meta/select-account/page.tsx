@@ -188,7 +188,10 @@ export default async function SelectAccountPage(props: {
                 adAccounts.map((acc: any) => (
                   <Card key={acc.account_id} className="hover:border-primary/20 transition-colors shadow-sm">
                     <CardContent className="p-0">
-                      <form action={selectMetaAccount} className="flex flex-col sm:flex-row items-center justify-between p-6 gap-4">
+                      <form action={async (formData: FormData) => {
+                        "use server";
+                        await selectMetaAccount(formData);
+                      }} className="flex flex-col sm:flex-row items-center justify-between p-6 gap-4">
                         <input type="hidden" name="tenant_id" value={tenant.id} />
                         <input type="hidden" name="slug" value={slug} />
                         <input type="hidden" name="account_id" value={acc.account_id} />
