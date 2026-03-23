@@ -31,13 +31,19 @@ export default async function TenantDashboard(props: {
 
   const supabase = await createClient();
 
-  const { data: tenant } = await supabase
+  const { data: rawTenant, error: tenantErr } = await supabase
     .from("tenants")
-    .select("id, name, currency")
+    .select("id, name")
     .eq("slug", slug)
     .single();
 
-  if (!tenant) return <div>Empresa no encontrada.</div>;
+  const tenant = rawTenant ? { ...rawTenant, currency: (rawTenant as any).currency || "PEN" } : null;
+
+  if (tenantErr) {
+    console.error("Tenant Error:", tenantErr);
+  }
+
+  if (!tenant) return <div>Empresa no encontrada. {tenantErr?.message}</div>;
 
   // ── Conexión con Meta ──
   const { data: connection } = await supabase

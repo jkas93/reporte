@@ -27,11 +27,13 @@ export default async function CampaignsPage(props: {
 
   const supabase = await createClient();
 
-  const { data: tenant } = await supabase
+  const { data: rawTenant } = await supabase
     .from("tenants")
-    .select("id, name, currency")
+    .select("id, name")
     .eq("slug", slug)
     .single();
+
+  const tenant = rawTenant ? { ...rawTenant, currency: (rawTenant as any).currency || "PEN" } : null;
 
   if (!tenant) return <div>Empresa no encontrada</div>;
 

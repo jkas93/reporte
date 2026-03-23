@@ -33,11 +33,13 @@ export default async function CampaignDetailPage(props: {
   const supabase = await createClient();
 
   // 1. Obtener tenant
-  const { data: tenant } = await supabase
+  const { data: rawTenant } = await supabase
     .from("tenants")
-    .select("id, name, currency")
+    .select("id, name")
     .eq("slug", slug)
     .single();
+
+  const tenant = rawTenant ? { ...rawTenant, currency: (rawTenant as any).currency || "PEN" } : null;
   if (!tenant) return <div className="p-8 text-center text-muted-foreground">Empresa no encontrada</div>;
 
   // 2. Conexión activa con Meta
