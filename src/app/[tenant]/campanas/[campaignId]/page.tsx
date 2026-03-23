@@ -17,6 +17,7 @@ import {
   ArrowLeft, DollarSign, MousePointerClick, Users, Target, BarChart2,
 } from "lucide-react";
 import Link from "next/link";
+import { formatCurrency, formatNumber } from "@/lib/utils/formatters";
 
 const VALID_PRESETS = ["today","yesterday","last_7d","last_30d","this_month","last_month","last_90d"];
 
@@ -34,7 +35,7 @@ export default async function CampaignDetailPage(props: {
   // 1. Obtener tenant
   const { data: tenant } = await supabase
     .from("tenants")
-    .select("id, name")
+    .select("id, name, currency")
     .eq("slug", slug)
     .single();
   if (!tenant) return <div className="p-8 text-center text-muted-foreground">Empresa no encontrada</div>;
@@ -74,9 +75,6 @@ export default async function CampaignDetailPage(props: {
     getAdsetInsights(connection.ad_account_id, campaignId, token, rawPreset),
     getAdsInsights(connection.ad_account_id, campaignId, token, rawPreset),
   ]);
-
-  const currencyFormatter = new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" });
-  const numberFormatter = new Intl.NumberFormat("es-PE");
 
   const totalSpend = adsets.reduce((a, r) => a + parseFloat(r.spend || "0"), 0);
   const totalClicks = adsets.reduce((a, r) => a + parseInt(r.clicks || "0"), 0);
@@ -124,21 +122,21 @@ export default async function CampaignDetailPage(props: {
         {[
           {
             label: "Inversión Total",
-            value: currencyFormatter.format(totalSpend),
+            value: formatCurrency(totalSpend, tenant.currency),
             icon: <DollarSign size={20} />,
             color: "text-primary",
             bg: "bg-primary/10"
           },
           {
             label: "Alcance",
-            value: numberFormatter.format(totalReach),
+            value: formatNumber(totalReach),
             icon: <Users size={20} />,
             color: "text-blue-500",
             bg: "bg-blue-500/10"
           },
           {
             label: "Clics",
-            value: numberFormatter.format(totalClicks),
+            value: formatNumber(totalClicks),
             icon: <MousePointerClick size={20} />,
             color: "text-purple-500",
             bg: "bg-purple-500/10"
@@ -203,16 +201,16 @@ export default async function CampaignDetailPage(props: {
                           {adset.adset_name}
                         </TableCell>
                         <TableCell className="text-right font-bold tabular-nums">
-                          {currencyFormatter.format(parseFloat(adset.spend || "0"))}
+                          {formatCurrency(parseFloat(adset.spend || "0"), tenant.currency)}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground hidden sm:table-cell tabular-nums">
-                          {numberFormatter.format(parseInt(adset.clicks || "0"))}
+                          {formatNumber(parseInt(adset.clicks || "0"))}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground hidden md:table-cell tabular-nums">
                           {adset.ctr ? `${parseFloat(adset.ctr).toFixed(2)}%` : "—"}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground hidden lg:table-cell tabular-nums pr-6">
-                          {adset.cpc ? currencyFormatter.format(parseFloat(adset.cpc)) : "—"}
+                          {adset.cpc ? formatCurrency(parseFloat(adset.cpc), tenant.currency) : "—"}
                         </TableCell>
                       </TableRow>
                     ))
@@ -264,16 +262,16 @@ export default async function CampaignDetailPage(props: {
                           {ad.name}
                         </TableCell>
                         <TableCell className="text-right font-bold tabular-nums">
-                          {currencyFormatter.format(parseFloat(ad.spend || "0"))}
+                          {formatCurrency(parseFloat(ad.spend || "0"), tenant.currency)}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground hidden sm:table-cell tabular-nums">
-                          {numberFormatter.format(parseInt(ad.clicks || "0"))}
+                          {formatNumber(parseInt(ad.clicks || "0"))}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground hidden md:table-cell tabular-nums">
                           {ad.ctr ? `${parseFloat(ad.ctr).toFixed(2)}%` : "—"}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground hidden lg:table-cell tabular-nums pr-6">
-                            {ad.reach ? numberFormatter.format(parseInt(ad.reach)) : "—"}
+                            {ad.reach ? formatNumber(parseInt(ad.reach)) : "—"}
                         </TableCell>
                       </TableRow>
                     ))}

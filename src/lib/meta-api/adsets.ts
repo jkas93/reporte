@@ -1,4 +1,4 @@
-import { META_API_VERSION, metaAuthHeaders } from "./oauth";
+import { metaFetch } from "./client";
 
 export interface Adset {
   id: string;
@@ -38,25 +38,15 @@ export async function getAdsetInsights(
   accessToken: string,
   datePreset: string = "last_30d"
 ): Promise<AdsetInsight[]> {
-  const filtering = encodeURIComponent(
-    JSON.stringify([{ field: "campaign.id", operator: "EQUAL", value: campaignId }])
-  );
+  const filtering = JSON.stringify([{ field: "campaign.id", operator: "EQUAL", value: campaignId }]);
+  const endpoint = `act_${adAccountId}/insights?level=adset&fields=adset_id,adset_name,spend,reach,clicks,cpc,ctr,impressions&filtering=${filtering}&date_preset=${datePreset}`;
 
-  // Fix C-1: Token en Authorization header
-  const url = `https://graph.facebook.com/${META_API_VERSION}/act_${adAccountId}/insights?level=adset&fields=adset_id,adset_name,spend,reach,clicks,cpc,ctr,impressions&filtering=${filtering}&date_preset=${datePreset}`;
+  const data = await metaFetch<{ data: AdsetInsight[] }>(endpoint, { 
+    accessToken,
+    next: { revalidate: 900 }
+  });
 
-  const response = await fetch(url, { 
-    headers: metaAuthHeaders(accessToken),
-    next: { revalidate: 900 } 
-  }); 
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || "Error al obtener conjuntos de anuncios");
-  }
-
-  const data = await response.json();
-  return (data.data || []) as AdsetInsight[];
+  return data.data || [];
 }
 
 /** Trae los anuncios individuales (ads) de una campaña específica */
@@ -66,35 +56,29 @@ export async function getAdsInsights(
   accessToken: string,
   datePreset: string = "last_30d"
 ): Promise<AdCreative[]> {
-  const filtering = encodeURIComponent(
-    JSON.stringify([{ field: "campaign.id", operator: "EQUAL", value: campaignId }])
-  );
+  const filtering = JSON.stringify([{ field: "campaign.id", operator: "EQUAL", value: campaignId }]);
+  const endpoint = `act_${adAccountId}/insights?level=ad&fields=ad_id,ad_name,spend,reach,clicks,cpc,ctr,impressions&filtering=${filtering}&date_preset=${datePreset}`;
 
-  // Fix C-1: Token en Authorization header
-  const url = `https://graph.facebook.com/${META_API_VERSION}/act_${adAccountId}/insights?level=ad&fields=ad_id,ad_name,spend,reach,clicks,cpc,ctr,impressions&filtering=${filtering}&date_preset=${datePreset}`;
+  try {
+    const data = await metaFetch<{ data: any[] }>(endpoint, { 
+      accessToken,
+      next: { revalidate: 900 }
+    });
 
-  const response = await fetch(url, { 
-    headers: metaAuthHeaders(accessToken),
-    next: { revalidate: 900 } 
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    console.warn("Error fetching ad-level insights:", error);
+    return (data.data || []).map((item: any) => ({
+      id: item.ad_id,
+      name: item.ad_name,
+      spend: item.spend,
+      reach: item.reach,
+      clicks: item.clicks,
+      cpc: item.cpc,
+      ctr: item.ctr,
+      impressions: item.impressions,
+    }));
+  } catch (error) {
+    console.warn("[MetaAdsets] Error fetching ad insights:", error);
     return [];
   }
-
-  const data = await response.json();
-  return (data.data || []).map((item: any) => ({
-    id: item.ad_id,
-    name: item.ad_name,
-    spend: item.spend,
-    reach: item.reach,
-    clicks: item.clicks,
-    cpc: item.cpc,
-    ctr: item.ctr,
-    impressions: item.impressions,
-  })) as AdCreative[];
 }
 
 /** Metadata básica de la campaña */
@@ -102,11 +86,15 @@ export async function getCampaignMeta(
   campaignId: string,
   accessToken: string
 ) {
-  const url = `https://graph.facebook.com/${META_API_VERSION}/${campaignId}?fields=id,name,status,objective,daily_budget,lifetime_budget,start_time,stop_time`;
-  const response = await fetch(url, { 
-    headers: metaAuthHeaders(accessToken),
-    next: { revalidate: 900 } 
-  });
-  if (!response.ok) return null;
-  return response.json();
+  const endpoint = `${campaignId}?fields=id,name,status,objective,daily_budget,lifetime_budget,start_time,stop_time`;
+  
+  try {
+    return await metaFetch<any>(endpoint, { 
+      accessToken,
+      next: { revalidate: 900 } 
+    });
+  } catch (error) {
+    console.error(`[MetaAdsets] Error fetching campaign meta for ${campaignId}:`, error);
+    return null;
+  }
 }

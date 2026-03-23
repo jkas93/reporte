@@ -86,6 +86,36 @@ export function TenantDialog({ tenant, trigger }: { tenant?: any; trigger?: Reac
             {state?.errors?.logo_url && <p className="text-sm text-destructive">{state.errors.logo_url[0]}</p>}
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="currency">Moneda</Label>
+              <select
+                id="currency"
+                name="currency"
+                defaultValue={tenant?.currency || "PEN"}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="PEN">PEN (S/)</option>
+                <option value="USD">USD ($)</option>
+                <option value="MXN">MXN ($)</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="timezone">Zona Horaria</Label>
+              <select
+                id="timezone"
+                name="timezone"
+                defaultValue={tenant?.timezone || "America/Lima"}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="America/Lima">Lima (PET)</option>
+                <option value="America/Mexico_City">México (CST)</option>
+                <option value="UTC">UTC</option>
+              </select>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="status">Estado</Label>
             <select

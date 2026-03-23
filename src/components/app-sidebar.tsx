@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { usePathname } from "next/navigation"
+import Link from "next/link"
 import { 
   LayoutDashboard, Building2, Users, HardDrive, 
   Megaphone, Link2, Command, Search, Settings2, 
@@ -78,7 +79,7 @@ export function AppSidebar({ user, tenantName, ...props }: { user?: any, tenantN
             <SidebarMenuButton
               size="lg"
               className="data-[slot=sidebar-menu-button]:p-1.5!"
-              render={<a href="/" />}
+              render={<Link href="/" />}
             >
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                 <Command className="size-5" />

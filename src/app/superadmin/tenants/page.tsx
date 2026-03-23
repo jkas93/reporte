@@ -12,6 +12,7 @@ import { TenantDialog } from "./components/tenant-dialog";
 import { DeleteTenantButton } from "./components/delete-tenant-button";
 import { Button } from "@/components/ui/button";
 import { Edit } from "lucide-react";
+import Image from "next/image";
 
 export default async function TenantsPage() {
   const supabase = createAdminClient();
@@ -69,7 +70,14 @@ export default async function TenantsPage() {
                   <TableCell className="font-medium text-foreground">
                     <div className="flex items-center gap-3">
                       {tenant.logo_url ? (
-                        <img src={tenant.logo_url} alt={tenant.name} className="h-8 w-8 rounded-lg object-cover bg-muted border" />
+                        <div className="relative h-8 w-8 rounded-lg overflow-hidden border bg-muted">
+                          <Image 
+                            src={tenant.logo_url} 
+                            alt={tenant.name} 
+                            fill
+                            className="object-cover" 
+                          />
+                        </div>
                       ) : (
                         <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center text-xs text-muted-foreground border">
                           {tenant.name.charAt(0)}

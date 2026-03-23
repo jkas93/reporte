@@ -6,6 +6,8 @@ export const TenantSchema = z.object({
     .regex(/^[a-z0-9-]+$/, { message: "El slug solo puede contener minúsculas, números y guiones" }),
   logo_url: z.string().url({ message: "Debe ser una URL válida" }).optional().or(z.literal('')),
   status: z.enum(["active", "inactive", "suspended"]).default("active"),
+  currency: z.string().default("PEN"),
+  timezone: z.string().default("America/Lima"),
 });
 
 export type TenantActionState = {
@@ -14,6 +16,8 @@ export type TenantActionState = {
     slug?: string[];
     logo_url?: string[];
     status?: string[];
+    currency?: string[];
+    timezone?: string[];
     server?: string;
   };
   success?: boolean;

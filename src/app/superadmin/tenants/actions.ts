@@ -19,7 +19,7 @@ export async function createTenantAction(
     return { errors: validatedFields.error.flatten().fieldErrors };
   }
 
-  const { name, slug, logo_url, status } = validatedFields.data;
+  const { name, slug, logo_url, status, currency, timezone } = validatedFields.data;
   const adminAuthClient = createAdminClient();
 
   // Validate Slug doesn't exist
@@ -38,6 +38,8 @@ export async function createTenantAction(
     slug,
     logo_url,
     status,
+    currency,
+    timezone,
   });
 
   if (error) {
@@ -63,7 +65,7 @@ export async function updateTenantAction(
     return { errors: validatedFields.error.flatten().fieldErrors };
   }
 
-  const { name, slug, logo_url, status } = validatedFields.data;
+  const { name, slug, logo_url, status, currency, timezone } = validatedFields.data;
   const adminAuthClient = createAdminClient();
 
   // Check slug conflict on other tenants
@@ -80,7 +82,15 @@ export async function updateTenantAction(
 
   const { error } = await adminAuthClient
     .from("tenants")
-    .update({ name, slug, logo_url, status, updated_at: new Date().toISOString() })
+    .update({ 
+      name, 
+      slug, 
+      logo_url, 
+      status, 
+      currency,
+      timezone,
+      updated_at: new Date().toISOString() 
+    })
     .eq("id", id);
 
   if (error) {

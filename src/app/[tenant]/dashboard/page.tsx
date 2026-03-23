@@ -16,6 +16,7 @@ import { CampaignsEvolutionChart } from "@/components/ui/charts";
 import { DateRangeSelector } from "@/components/ui/date-range-selector";
 import { SyncButton } from "@/components/ui/sync-button";
 import { getCache, setCache } from "@/lib/utils/cache";
+import { formatCurrency, formatNumber } from "@/lib/utils/formatters";
 
 const VALID_PRESETS = ["today","yesterday","last_7d","last_30d","this_month","last_month","last_90d"];
 
@@ -32,7 +33,7 @@ export default async function TenantDashboard(props: {
 
   const { data: tenant } = await supabase
     .from("tenants")
-    .select("id, name")
+    .select("id, name, currency")
     .eq("slug", slug)
     .single();
 
@@ -71,12 +72,6 @@ export default async function TenantDashboard(props: {
   const { metrics, topCampaigns, timeline } = cachedData;
 
   const hasSyncedData = metrics.hasSyncedData;
-
-  const currencyFormatter = new Intl.NumberFormat("es-PE", {
-    style: "currency",
-    currency: "PEN",
-  });
-  const numberFormatter = new Intl.NumberFormat("es-PE");
 
   return (
     <div className="space-y-6">
@@ -135,21 +130,21 @@ export default async function TenantDashboard(props: {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Inversión (Spend)"
-          value={hasSyncedData ? currencyFormatter.format(metrics.spend) : "—"}
+          value={hasSyncedData ? formatCurrency(metrics.spend, tenant.currency) : "—"}
           icon={<DollarSign className="h-4 w-4" />}
           variant="primary"
           demo={!hasSyncedData}
         />
         <KpiCard
           label="Alcance (Reach)"
-          value={hasSyncedData ? numberFormatter.format(metrics.reach) : "—"}
+          value={hasSyncedData ? formatNumber(metrics.reach) : "—"}
           icon={<Users className="h-4 w-4" />}
           variant="primary"
           demo={!hasSyncedData}
         />
         <KpiCard
           label="Clics Totales"
-          value={hasSyncedData ? numberFormatter.format(metrics.clicks) : "—"}
+          value={hasSyncedData ? formatNumber(metrics.clicks) : "—"}
           icon={<MousePointerClick className="h-4 w-4" />}
           variant="primary"
           sub={hasSyncedData ? `CTR: ${metrics.ctr.toFixed(2)}%` : "CTR: —"}
@@ -160,7 +155,7 @@ export default async function TenantDashboard(props: {
           value={hasSyncedData ? String(metrics.conversions) : "—"}
           icon={<Target className="h-4 w-4" />}
           variant="primary"
-          sub={hasSyncedData ? `CPC: ${currencyFormatter.format(metrics.cpc)}` : "CPC: —"}
+          sub={hasSyncedData ? `CPC: ${formatCurrency(metrics.cpc, tenant.currency)}` : "CPC: —"}
           demo={!hasSyncedData}
         />
       </div>
@@ -195,9 +190,9 @@ export default async function TenantDashboard(props: {
                   </div>
                   <div className="flex flex-col items-end shrink-0 pl-2">
                     <span className="text-sm font-bold">
-                      {currencyFormatter.format(c.spend)}
+                      {formatCurrency(c.spend, tenant.currency)}
                     </span>
-                    <span className="text-[10px] text-muted-foreground font-medium uppercase">{numberFormatter.format(c.clicks)} clics</span>
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase">{formatNumber(c.clicks)} clics</span>
                   </div>
                 </div>
               ))

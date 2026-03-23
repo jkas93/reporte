@@ -11,6 +11,8 @@ import { DateRangeSelector } from "@/components/ui/date-range-selector";
 import { SyncButton } from "@/components/ui/sync-button";
 import { ExportButton } from "@/components/ui/export-button";
 import { Megaphone, ChevronRight } from "lucide-react";
+import { getCache, setCache } from "@/lib/utils/cache";
+import { formatCurrency, formatNumber } from "@/lib/utils/formatters";
 
 const VALID_PRESETS = ["today","yesterday","last_7d","last_30d","this_month","last_month","last_90d"];
 
@@ -27,7 +29,7 @@ export default async function CampaignsPage(props: {
 
   const { data: tenant } = await supabase
     .from("tenants")
-    .select("id, name")
+    .select("id, name, currency")
     .eq("slug", slug)
     .single();
 
@@ -55,33 +57,37 @@ export default async function CampaignsPage(props: {
     .gte("date", from)
     .lte("date", to);
 
-  // Agrupar por Meta campaign_id
-  const grouped = new Map<string, {
-    campaign_name: string;
-    meta_campaign_id: string;
-    spend: number;
-    clicks: number;
-  }>();
+  // --- Cache Logic (Phase S.1) ---
+  const cacheKey = `campaigns:${tenant.id}:${preset}`;
+  let campaignsData = await getCache<any[]>(cacheKey);
 
-  for (const row of rawInsights || []) {
-    const c = row.campaigns as any;
-    const existing = grouped.get(c.campaign_id) || {
-      campaign_name: c.campaign_name,
-      meta_campaign_id: c.campaign_id,
-      spend: 0,
-      clicks: 0,
-    };
-    grouped.set(c.campaign_id, {
-      ...existing,
-      spend: existing.spend + Number(row.spend),
-      clicks: existing.clicks + Number(row.clicks),
-    });
+  if (!campaignsData) {
+    // Agrupar por Meta campaign_id
+    const grouped = new Map<string, {
+      campaign_name: string;
+      meta_campaign_id: string;
+      spend: number;
+      clicks: number;
+    }>();
+
+    for (const row of rawInsights || []) {
+      const c = row.campaigns as any;
+      const existing = grouped.get(c.campaign_id) || {
+        campaign_name: c.campaign_name,
+        meta_campaign_id: c.campaign_id,
+        spend: 0,
+        clicks: 0,
+      };
+      grouped.set(c.campaign_id, {
+        ...existing,
+        spend: existing.spend + Number(row.spend),
+        clicks: existing.clicks + Number(row.clicks),
+      });
+    }
+
+    campaignsData = Array.from(grouped.values()).sort((a, b) => b.spend - a.spend);
+    await setCache(cacheKey, campaignsData, 300); // 5 min
   }
-
-  const campaignsData = Array.from(grouped.values()).sort((a, b) => b.spend - a.spend);
-
-  const currencyFormatter = new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" });
-  const numberFormatter = new Intl.NumberFormat("es-PE");
 
   // Datos para exportar CSV
   const exportData = campaignsData.map((c) => ({
@@ -178,10 +184,10 @@ export default async function CampaignsPage(props: {
                           </Link>
                         </TableCell>
                         <TableCell className="text-right font-bold tabular-nums">
-                          {currencyFormatter.format(campaign.spend)}
+                          {formatCurrency(campaign.spend, tenant.currency)}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground hidden sm:table-cell tabular-nums">
-                          {numberFormatter.format(campaign.clicks)}
+                          {formatNumber(campaign.clicks)}
                         </TableCell>
                         <TableCell className="text-right hidden lg:table-cell pr-5">
                           <div className="flex items-center justify-end gap-2">
@@ -217,7 +223,7 @@ export default async function CampaignsPage(props: {
                 {campaignsData.length} campaña{campaignsData.length > 1 ? "s" : ""}
               </span>
               <span>
-                Total: {currencyFormatter.format(campaignsData.reduce((a, c) => a + c.spend, 0))}
+                Total: {formatCurrency(campaignsData.reduce((a, c) => a + c.spend, 0), tenant.currency)}
               </span>
             </div>
           )}

@@ -8,6 +8,7 @@ import { selectMetaAccount } from "./actions";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
 
 export default async function SelectAccountPage(props: {
   params: Promise<{ tenant: string }>;
@@ -122,11 +123,14 @@ export default async function SelectAccountPage(props: {
                   <CardContent className="p-6 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       {userProfile?.picture?.data?.url ? (
-                        <img 
-                          src={userProfile.picture.data.url} 
-                          alt="Personal Profile" 
-                          className="h-12 w-12 rounded-full border object-cover" 
-                        />
+                        <div className="relative h-12 w-12 rounded-full border overflow-hidden">
+                          <Image 
+                            src={userProfile.picture.data.url} 
+                            alt="Personal Profile" 
+                            fill
+                            className="object-cover" 
+                          />
+                        </div>
                       ) : (
                         <div className="h-12 w-12 bg-muted rounded-full flex items-center justify-center shrink-0 border">
                           <UserCircle className="text-muted-foreground" size={24} />
@@ -152,11 +156,14 @@ export default async function SelectAccountPage(props: {
                          <CardContent className="p-6 flex items-center justify-between">
                            <div className="flex items-center gap-4">
                              {biz.profile_picture_uri ? (
-                               <img 
-                                 src={biz.profile_picture_uri} 
-                                 alt={biz.name} 
-                                 className="h-12 w-12 rounded-lg border object-cover" 
-                               />
+                               <div className="relative h-12 w-12 rounded-lg border overflow-hidden">
+                                 <Image 
+                                   src={biz.profile_picture_uri} 
+                                   alt={biz.name} 
+                                   fill
+                                   className="object-cover" 
+                                 />
+                               </div>
                              ) : (
                                <div className="h-12 w-12 bg-muted rounded-lg flex items-center justify-center shrink-0 border">
                                  <Briefcase className="text-muted-foreground" size={24} />

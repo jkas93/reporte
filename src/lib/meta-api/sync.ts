@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { META_API_VERSION, metaAuthHeaders } from "./oauth";
+import { metaFetch, MetaApiError } from "./client";
 
 interface SyncResult {
   campaignsProcessed: number;
@@ -14,44 +14,43 @@ export async function syncTenantData(
   datePreset: string = "last_30d",
   tokenExpiresAt?: string | null
 ): Promise<SyncResult> {
+  // Verificación de expiración proactiva (U.1)
   if (tokenExpiresAt && new Date(tokenExpiresAt) < new Date()) {
     throw new Error("TOKEN_EXPIRED: El token de Meta ha expirado. Reconecta tu cuenta.");
   }
 
   const supabase = createAdminClient();
 
-  // Fix P-3: Paginación completa — recorre todos los cursores de Meta API
+  // Paginación completa con MetaClient (Audit U.1)
   const allInsights: any[] = [];
-  let cursor: string | null = null;
+  let afterCursor: string | null = null;
 
-  do {
-    const paginationUrl = `https://graph.facebook.com/${META_API_VERSION}/act_${adAccountId}/insights?level=campaign&fields=campaign_id,campaign_name,spend,reach,clicks,cpc,ctr,actions&time_increment=1&date_preset=${datePreset}${cursor ? `&after=${cursor}` : ""}`;
+  try {
+    do {
+      const endpoint: string = `act_${adAccountId}/insights?level=campaign&fields=campaign_id,campaign_name,spend,reach,clicks,cpc,ctr,actions&time_increment=1&date_preset=${datePreset}${afterCursor ? `&after=${afterCursor}` : ""}`;
 
-    // Fix C-1: Token en Authorization header
-    const response = await fetch(paginationUrl, {
-      headers: metaAuthHeaders(token),
-    });
+      const body: any = await metaFetch<any>(endpoint, { accessToken: token });
+      const rows = body.data || [];
+      allInsights.push(...rows);
 
-    if (!response.ok) {
-      const error = await response.json();
-      
-      if (response.status === 429 || error.error?.code === 17 || error.error?.code === 80004) {
+      // Avanzar al siguiente cursor si existe
+      afterCursor = body.paging?.cursors?.after && body.paging?.next
+        ? (body.paging.cursors.after as string)
+        : null;
+
+    } while (afterCursor);
+  } catch (err) {
+    if (err instanceof MetaApiError) {
+      if (err.isRateLimit) {
         throw new Error("RATE_LIMIT: Límite de peticiones de Meta API alcanzado. Intenta de nuevo más tarde.");
       }
-
-      throw new Error(error.error?.message || "Error al sincronizar campañas desde Meta API");
+      if (err.isTokenExpired) {
+        throw new Error("TOKEN_EXPIRED: Tu sesión de Meta expiró. Por favor, vuelve a iniciar sesión.");
+      }
+      throw new Error(`API_ERROR: ${err.message}`);
     }
-
-    const body: any = await response.json();
-    const rows = body.data || [];
-    allInsights.push(...rows);
-
-    // Avanzar al siguiente cursor si existe
-    cursor = body.paging?.cursors?.after && body.paging?.next
-      ? (body.paging.cursors.after as string)
-      : null;
-
-  } while (cursor);
+    throw err;
+  }
 
   if (allInsights.length === 0) {
     return { campaignsProcessed: 0, insightsProcessed: 0 };
@@ -70,7 +69,6 @@ export async function syncTenantData(
     campaign_name: cName,
   }));
 
-  // Fix Q-3: Verificar errores de Supabase
   const { data: insertedCampaigns, error: campErr } = await supabase
     .from("campaigns")
     .upsert(campaignsToUpsert, { onConflict: "meta_connection_id, campaign_id" })
@@ -78,14 +76,13 @@ export async function syncTenantData(
 
   if (campErr) throw new Error(`Error guardando campañas: ${campErr.message}`);
 
-  // Mapa reverso: FB campaign_id → Supabase UUID
   const campaignIdMap = new Map<string, string>();
   insertedCampaigns?.forEach((c: any) => campaignIdMap.set(c.campaign_id, c.id));
 
   // 2. Preparar registros diarios de insights
   const datesToClear = new Set<string>();
   const adInsightsToInsert = allInsights
-    .filter((row: any) => campaignIdMap.has(row.campaign_id)) // Descartar rows sin UUID válido
+    .filter((row: any) => campaignIdMap.has(row.campaign_id))
     .map((row: any) => {
       datesToClear.add(row.date_start);
 
@@ -113,7 +110,6 @@ export async function syncTenantData(
       };
     });
 
-  // Limpiar días específicos antes de re-insertar
   const datesArray = Array.from(datesToClear);
   await supabase
     .from("ad_insights")
@@ -127,7 +123,6 @@ export async function syncTenantData(
 
   if (insErr) throw new Error(`Error guardando insights: ${insErr.message}`);
 
-  // Actualizar last_synced_at
   await supabase
     .from("meta_connections")
     .update({ last_synced_at: new Date().toISOString() })
