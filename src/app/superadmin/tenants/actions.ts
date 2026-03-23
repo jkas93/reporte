@@ -96,6 +96,7 @@ export async function deleteTenantAction(id: string) {
 
   const adminAuthClient = createAdminClient();
   const { error } = await adminAuthClient.from("tenants").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
   revalidatePath("/superadmin/tenants");
+  return { success: true };
 }
