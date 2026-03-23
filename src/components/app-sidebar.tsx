@@ -49,7 +49,7 @@ const documentsItems = [
   { name: "Asistente", url: "#", icon: <FileText /> },
 ]
 
-export function AppSidebar({ user, tenantName, ...props }: { user: any, tenantName?: string } & React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ user, tenantName, ...props }: { user?: any, tenantName?: string } & React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
   const isSuperadmin = pathname.startsWith("/superadmin")
   const segments = pathname.split("/")

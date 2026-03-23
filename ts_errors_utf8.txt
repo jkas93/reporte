@@ -1,0 +1,4 @@
+﻿src/components/data-table.tsx(684,22): error TS2322: Type '{ children: string; render: Element; }' is not assignable to type 'IntrinsicAttributes & DialogTriggerProps & RefAttributes<HTMLButtonElement>'.
+  Property 'render' does not exist on type 'IntrinsicAttributes & DialogTriggerProps & RefAttributes<HTMLButtonElement>'.
+src/components/data-table.tsx(860,24): error TS2322: Type '{ render: Element; }' is not assignable to type 'IntrinsicAttributes & DialogCloseProps & RefAttributes<HTMLButtonElement>'.
+  Property 'render' does not exist on type 'IntrinsicAttributes & DialogCloseProps & RefAttributes<HTMLButtonElement>'.
